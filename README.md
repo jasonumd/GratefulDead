@@ -2,7 +2,13 @@
 Digitizing Grateful Dead data and making it freely available to all Deadheads.
 
 ## **Deadbase XI**
-Updated OCR was generated on the Deadbase XI scan using NAPS2. New PDF was exported as .txt using Adobe Reader. SHA-512 hashes of these files are included. I am currently working on getting Deadbase XI text into a sqlite database. This is forthcoming.
+Updated OCR was generated on the Deadbase XI scan using NAPS2. New PDF was exported as .txt using Adobe Reader. SHA-512 hashes of these files are included.  
+
+**Current Work**  
+I am currently working on getting Deadbase XI text into a sqlite database. This will be a data source that any Deadhead can store locally and query shows, playlists, comments.  
+
+**Long Term Plan**  
+Incorporate Deadbase 50 updates to digitized Deadbase XI.
 
 ## **music_album_rename**
 This script allows you to rename the album of an entire library based on the date in the .flac filename and the contents of the music.db sqlite database. The format the script uses is "YYYY-MM-DD Venue, Location2, Location2", but you can modify this as you prefer for your library preferences. The database is currently populated with all Grateful Dead shows.  
