@@ -184,9 +184,11 @@ def traverse_directory(path):
                     row = result[selection_int]
                         
             #Handle Canada
-            StateOrCanada = row[7]
+            StateOrCanada = ""
             if row[7] is None:
                 StateOrCanada = row[8]
+            else:
+                StateOrCanada = row[7]
             
             artist = row[0]
             albumnew = str(row[2]) + "-" + str(row[3]).zfill(2) + "-" + str(row[4]).zfill(2) + Version + " " + row[5] + EarlyLate + ", " + row[6] + ", " + StateOrCanada
