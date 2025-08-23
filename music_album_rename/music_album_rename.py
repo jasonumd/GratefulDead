@@ -1,7 +1,11 @@
 # Jason Evans
-# 2025-02-08
-# Python script to rename music albums. Created for Grateful Dead but can be adapted for any artist.
-# I only deal in 4-digit years. My library was adapted for such.
+# 2025-08-07
+# Python script to set artist, album artist, and album. Created for Grateful Dead and Jerry Garcia downloads.
+# Reads 4 digit date from folder name and looks up the show in a SQLite database (export from JerryBase.com).
+# The artist and album artist are set via database information. This is especially important for JGB-related shows.
+# The album is set in the following format:
+# YYYY-DD-MM (sbd/aud/fm/tv/fob/studio/gmb/pa/mtx [Miller] [shnid]) [(Early/Late Show)] Venue, City, State
+# I only deal in 4-digit years. My library was adapted for such. In Windows, I used PowerRename.
 # 
 # Command Line Arguments:
 # 1: int representing running the script in trial mode. 1 = trial mode (album info won't be written). 0 = Full Send.
@@ -9,15 +13,10 @@
 # 3: int representing if this is a Grateful Dead (1) or Jerry Garcia (0) lookup
 # 4: Top level directory path to rename. This script is recursive.
 
-#pip install mutagen
-#pip install pathlib
-#pip install python-dateutil
-#install sqlite3
-
 import sys
 import os
 import sqlite3 #Should work after sqlite3 installed
-from mutagen.flac import FLAC #pip install mutagen
+import music_tag #pip install music-tag
 from pathlib import Path #pip install pathlib
 from dateutil.parser import parse #pip install python-dateutil
 
@@ -109,21 +108,17 @@ def traverse_directory(path):
         if "early" in Folder.lower() and "late" in Folder.lower(): #Rare instance where filename contains both early and late
             EarlyLate = " (Early/Late Show)"
             write_line(early_and_late_log, Folder)
-        elif "early" in Folder:
+        elif "early" in Folder.lower():
             EarlyLate = " (Early Show)"
             write_line(early_log, Folder)
-        elif "late" in Folder:
+        elif "late" in Folder.lower():
             EarlyLate = " (Late Show)"
             write_line(late_log, Folder)
         
         #                    0           1           2            3            4            5           6             7              8
         sql = "SELECT acts.name, events.id, events.year, events.month, events.day, venues.name, venues.city, venues.state, venues.country " \
               "FROM venues INNER JOIN (acts INNER JOIN events ON acts.id = events.act_id) ON venues.id = events.venue_id " \
-               "WHERE events.year=? AND events.month=? AND events.day=? and acts.gd=?;"
-        
-        #sql = "SELECT Artists.artist, Shows.year, Shows.month, Shows.day, Venues.venue, Venues.location1, Venues.location2 " \
-        #      "FROM Venues INNER JOIN (Artists INNER JOIN Shows ON Artists.artist_id = Shows.artist_id_fk) ON Venues.venue_id = Shows.venue_id_fk " \
-        #      "WHERE Artists.artist=? AND Shows.year=? AND Shows.month=? AND Shows.day=?;"
+               "WHERE events.canceled=0 AND events.year=? AND events.month=? AND events.day=? and acts.gd=?;"
         
         cur.execute(sql, (year, month, day, GD))
         result = cur.fetchall();
@@ -201,61 +196,12 @@ def traverse_directory(path):
                 filename =  Path(filepathname).stem
                 
                 if file_extension == ".flac":
-                    audio = FLAC(filepathname)
+                    audio = music_tag.load_file(filepathname)
                     
                     if TrialMode == 0:
-                        title = ""
-                        date = ""
-                        tracknumber = ""
-                        genre = ""
-                        comment = ""
-                        
-                        try:
-                            title = audio['title']
-                        except:
-                            continue
-                            
-                        try:
-                            date = audio['date']
-                        except:
-                            continue
-                            
-                        try:
-                            tracknumber = audio['tracknumber']
-                        except:
-                            continue
-                            
-                        try:
-                            genre = audio['genre']
-                        except:
-                            continue
-                            
-                        try:
-                            comment = audio['comment']
-                        except:
-                            continue
-                        
-                        audio.delete()
-                        audio.save()
-                        
                         audio['artist'] = artist
                         audio['albumartist'] = artist
                         audio['album'] = albumnew
-                        
-                        if title != "":
-                            audio['title'] = title
-                        
-                        if date != "":
-                            audio['date'] = date
-                        
-                        if tracknumber != "":
-                            audio['tracknumber'] = tracknumber
-                        
-                        if genre != "":
-                            audio['genre'] = genre
-                            
-                        if comment != "":
-                            audio['comment'] = comment
                         
                         audio.save()
                 elif file_extension == ".shn" or file_extension == ".mp3":
@@ -265,7 +211,6 @@ def traverse_directory(path):
 
 def write_line(file, line):
     f = open(file, 'a')
-    #print(file)
     line = line.strip('\r')
     line = line.strip('\n')
     line += '\n'
@@ -276,10 +221,10 @@ if (len(sys.argv) - 1) != 4:
     print("This script requires 4 command line argument. Read the header and try again.")
     sys.exit()
 
-TrialMode = int(sys.argv[1])
-NumPadChars = int(sys.argv[2])
-GD = sys.argv[3] #GD=1, JG=0
-path = sys.argv[4] #Top level directory
+TrialMode = int(sys.argv[1]) #int representing running the script in trial mode. 1 = trial mode (album info won't be written). 0 = Full Send.
+NumPadChars = int(sys.argv[2]) #int representing number of pad characters in flac filename before date. Example: gd1986-12-15 = 2
+GD = sys.argv[3] #int representing if this is a Grateful Dead (1) or Jerry Garcia (0) lookup
+path = sys.argv[4] #Top level directory path to rename. This script is recursive.
 
 #Database
 db = "JerryBase.db"
